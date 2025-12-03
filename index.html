@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestor de Proyectos</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 2px 12px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #222;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 10px 18px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-right: 5px;
+        }
+
+        button:hover {
+            background: #155fc4;
+        }
+
+        .project {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .project-info {
+            max-width: 70%;
+        }
+
+        .actions button {
+            background: #e53935;
+            margin-left: 5px;
+        }
+
+        .actions button.edit {
+            background: #f9a825;
+        }
+
+        .actions button:hover {
+            opacity: 0.85;
+        }
+
+        .empty {
+            text-align: center;
+            color: #777;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>Gestor de Proyectos</header>
+
+<div class="container">
+    <h2>Agregar Proyecto</h2>
+
+    <input type="text" id="title" placeholder="Título del proyecto" />
+    <textarea id="description" placeholder="Descripción..."></textarea>
+    <button onclick="createProject()">Guardar</button>
+
+    <hr><br>
+
+    <h2>Lista de Proyectos</h2>
+    <div id="project-list"></div>
+</div>
+
+<script>
+    const API_URL = "https://eva4-backend.onrender.com/api/projects/";
+
+    // Obtener proyectos
+    async function loadProjects() {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        const list = document.getElementById("project-list");
+
+        list.innerHTML = "";
+
+        if (data.length === 0) {
+            list.innerHTML = `<p class="empty">No hay proyectos aún</p>`;
+            return;
+        }
+
+        data.forEach(project => {
+            const div = document.createElement("div");
+            div.className = "project";
+
+            div.innerHTML = `
+                <div class="project-info">
+                    <strong>${project.title}</strong><br>
+                    <small>${project.description}</small>
+                </div>
+
+                <div class="actions">
+                    <button class="edit" onclick="editProject(${project.id}, '${project.title}', '${project.description}')">Editar</button>
+                    <button onclick="deleteProject(${project.id})">Eliminar</button>
+                </div>
+            `;
+
+            list.appendChild(div);
+        });
+    }
+
+    // Crear proyecto
+    async function createProject() {
+        const title = document.getElementById("title").value;
+        const description = document.getElementById("description").value;
+
+        if (!title || !description) {
+            alert("Completa todos los campos");
+            return;
+        }
+
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, description })
+        });
+
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        loadProjects();
+    }
+
+    // Editar proyecto
+    async function editProject(id, oldTitle, oldDescription) {
+        const newTitle = prompt("Nuevo título:", oldTitle);
+        const newDescription = prompt("Nueva descripción:", oldDescription);
+
+        if (!newTitle || !newDescription) return;
+
+        await fetch(API_URL + id + "/", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: newTitle,
+                description: newDescription,
+                completed: false
+            })
+        });
+
+        loadProjects();
+    }
+
+    // Eliminar proyecto
+    async function deleteProject(id) {
+        const confirmDelete = confirm("¿Seguro que quieres borrar este proyecto?");
+        if (!confirmDelete) return;
+
+        await fetch(API_URL + id + "/", {
+            method: "DELETE"
+        });
+
+        loadProjects();
+    }
+
+    // Cargar proyectos al abrir la página
+    loadProjects();
+</script>
+
+</body>
+</html>
