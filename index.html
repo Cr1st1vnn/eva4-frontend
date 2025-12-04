@@ -103,7 +103,7 @@
 <div class="container">
     <h2>Agregar Proyecto</h2>
 
-    <input type="text" id="title" placeholder="Título del proyecto" />
+    <input type="text" id="name" placeholder="Nombre del proyecto" />
     <textarea id="description" placeholder="Descripción..."></textarea>
     <button onclick="createProject()">Guardar</button>
 
@@ -116,93 +116,104 @@
 <script>
     const API_URL = "https://eva4-backend.onrender.com/api/projects/";
 
-    // Obtener proyectos
     async function loadProjects() {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        const list = document.getElementById("project-list");
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            const list = document.getElementById("project-list");
 
-        list.innerHTML = "";
+            list.innerHTML = "";
 
-        if (data.length === 0) {
-            list.innerHTML = `<p class="empty">No hay proyectos aún</p>`;
-            return;
+            if (data.length === 0) {
+                list.innerHTML = `<p class="empty">No hay proyectos aún</p>`;
+                return;
+            }
+
+            data.forEach(project => {
+                const div = document.createElement("div");
+                div.className = "project";
+
+                div.innerHTML = `
+                    <div class="project-info">
+                        <strong>${project.name}</strong><br>
+                        <small>${project.description}</small>
+                    </div>
+
+                    <div class="actions">
+                        <button class="edit" onclick="editProject(${project.id}, '${project.name}', '${project.description}')">Editar</button>
+                        <button onclick="deleteProject(${project.id})">Eliminar</button>
+                    </div>
+                `;
+
+                list.appendChild(div);
+            });
+
+        } catch (err) {
+            alert("Error al cargar proyectos");
         }
-
-        data.forEach(project => {
-            const div = document.createElement("div");
-            div.className = "project";
-
-            div.innerHTML = `
-                <div class="project-info">
-                    <strong>${project.title}</strong><br>
-                    <small>${project.description}</small>
-                </div>
-
-                <div class="actions">
-                    <button class="edit" onclick="editProject(${project.id}, '${project.title}', '${project.description}')">Editar</button>
-                    <button onclick="deleteProject(${project.id})">Eliminar</button>
-                </div>
-            `;
-
-            list.appendChild(div);
-        });
     }
 
-    // Crear proyecto
     async function createProject() {
-        const title = document.getElementById("title").value;
+        const name = document.getElementById("name").value;
         const description = document.getElementById("description").value;
 
-        if (!title || !description) {
+        if (!name || !description) {
             alert("Completa todos los campos");
             return;
         }
 
-        await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, description })
-        });
+        try {
+            await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, description })
+            });
 
-        document.getElementById("title").value = "";
-        document.getElementById("description").value = "";
-        loadProjects();
+            document.getElementById("name").value = "";
+            document.getElementById("description").value = "";
+            loadProjects();
+        } catch {
+            alert("Error al crear proyecto");
+        }
     }
 
-    // Editar proyecto
-    async function editProject(id, oldTitle, oldDescription) {
-        const newTitle = prompt("Nuevo título:", oldTitle);
-        const newDescription = prompt("Nueva descripción:", oldDescription);
+    async function editProject(id, oldName, oldDesc) {
+        const newName = prompt("Nuevo nombre:", oldName);
+        const newDescription = prompt("Nueva descripción:", oldDesc);
 
-        if (!newTitle || !newDescription) return;
+        if (!newName || !newDescription) return;
 
-        await fetch(API_URL + id + "/", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                title: newTitle,
-                description: newDescription,
-                completed: false
-            })
-        });
+        try {
+            await fetch(API_URL + id + "/", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newName,
+                    description: newDescription,
+                    completed: false
+                })
+            });
 
-        loadProjects();
+            loadProjects();
+        } catch {
+            alert("Error al editar proyecto");
+        }
     }
 
-    // Eliminar proyecto
     async function deleteProject(id) {
-        const confirmDelete = confirm("¿Seguro que quieres borrar este proyecto?");
-        if (!confirmDelete) return;
+        if (!confirm("¿Seguro que quieres borrar este proyecto?")) return;
 
-        await fetch(API_URL + id + "/", {
-            method: "DELETE"
-        });
+        try {
+            await fetch(API_URL + id + "/", {
+                method: "DELETE"
+            });
 
-        loadProjects();
+            loadProjects();
+        } catch {
+            alert("Error al eliminar proyecto");
+        }
     }
 
-    // Cargar proyectos al abrir la página
     loadProjects();
 </script>
 
